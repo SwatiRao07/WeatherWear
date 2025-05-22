@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherWear - Weather-Based Outfit Recommender</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Universal box-sizing for consistent layout */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body styling: font, background gradient, text color */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; /* Full viewport height */
+            color: #333;
+        }
+
+        /* Main container for content, centered with max-width */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header styling */
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        /* Input section styling */
+        .input-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto; /* Override 100% width for checkboxes */
+        }
+
+        /* Submit button styling */
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading spinner styling */
+        .loading {
+            display: none; /* Hidden by default */
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            color: #667eea;
+            animation: spin 1s linear infinite; /* Spinner animation */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Results section styling */
+        .results {
+            display: none; /* Hidden by default */
+        }
+
+        .result-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .result-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Content area for displaying results, monospace for code-like output */
+        .result-content {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #f8f8f2; /* Default text color for result content */
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto; /* Enable horizontal scrolling if content overflows */
+            line-height: 1.6;
+            white-space: pre-wrap; /* Preserve whitespace and wrap text */
+        }
+
+        /* Color classes for ANSI conversion (standard colors) */
+        .text-red { color: #ff6b6b; }
+        .text-green { color: #51cf66; }
+        .text-yellow { color: #ffd43b; }
+        .text-blue { color: #74c0fc; }
+        .text-magenta { color: #d084ff; }
+        .text-cyan { color: #22d3ee; }
+        .text-white { color: #f8f8f2; } /* Matches default result-content text */
+        .text-black { color: #333; } /* For black text on dark background */
+        .text-gray { color: #a0a0a0; } /* For bright black/gray */
+
+        /* Color classes for ANSI conversion (bright colors) - ADDED */
+        .text-bright-red { color: #ff0000; }
+        .text-bright-green { color: #00ff00; }
+        .text-bright-yellow { color: #ffff00; }
+        .text-bright-blue { color: #0000ff; }
+        .text-bright-magenta { color: #ff00ff; }
+        .text-bright-cyan { color: #00ffff; }
+        .text-bright-white { color: #ffffff; }
+
+
+        /* Error message styling */
+        .error {
+            background: #ffe6e6;
+            color: #d63031;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #d63031;
+            margin-bottom: 20px;
+        }
+
+        /* Example queries section styling */
+        .examples {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .examples h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .examples ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .examples li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .examples li:last-child {
+            border-bottom: none;
+        }
+
+        .examples li i {
+            color: #667eea;
+            width: 20px;
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .input-section,
+            .result-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-cloud-sun"></i> WeatherWear</h1>
+            <p>Get smart outfit recommendations based on weather conditions</p>
+        </div>
+
+        <div class="input-section">
+            <form id="weatherForm">
+                <div class="form-group">
+                    <label for="location">
+                        <i class="fas fa-map-marker-alt"></i> Location
+                    </label>
+                    <input 
+                        type="text" 
+                        id="location" 
+                        name="location" 
+                        placeholder="e.g., New York, Tomorrow in London, here..."
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="style">
+                        <i class="fas fa-tshirt"></i> Style Preference
+                    </label>
+                    <select id="style" name="style">
+                        <option value="casual">Casual</option>
+                        <option value="formal">Formal</option>
+                        <option value="sporty">Sporty</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="forecast" name="forecast">
+                        <label for="forecast">
+                            <i class="fas fa-calendar-week"></i> Show 5-day forecast
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-magic"></i> Get My Outfit Recommendation
+                </button>
+            </form>
+
+            <div class="examples">
+                <h3><i class="fas fa-lightbulb"></i> Example Queries</h3>
+                <ul>
+                    <li><i class="fas fa-arrow-right"></i> New York</li>
+                    <li><i class="fas fa-arrow-right"></i> Tomorrow in London</li>
+                    <li><i class="fas fa-arrow-right"></i> My Location</li>
+                    <li><i class="fas fa-arrow-right"></i> Tokyo tomorrow</li>
+                    <li><i class="fas fa-arrow-right"></i> here (uses your current location)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <i class="fas fa-spinner"></i>
+            <p>Analyzing weather and creating your perfect outfit...</p>
+        </div>
+
+        <div class="results" id="results">
+            <div class="result-section" id="weatherSection">
+                <h2><i class="fas fa-cloud-sun"></i> Weather Information</h2>
+                <div class="result-content" id="weatherContent"></div>
+            </div>
+
+            <div class="result-section" id="outfitSection">
+                <h2><i class="fas fa-tshirt"></i> Your Outfit Recommendation</h2>
+                <div class="result-content" id="outfitContent"></div>
+            </div>
+
+            <div class="result-section" id="forecastSection" style="display: none;">
+                <h2><i class="fas fa-calendar-week"></i> 5-Day Forecast</h2>
+                <div class="result-content" id="forecastContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('weatherForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = document.querySelector('.submit-btn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            
+            // Clear any previous errors
+            document.querySelectorAll('.error').forEach(el => el.remove());
+            
+            try {
+                const response = await fetch('/recommend', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Display results
+                    document.getElementById('weatherContent').innerHTML = data.weather;
+                    document.getElementById('outfitContent').innerHTML = data.outfit;
+                    
+                    if (data.forecast) {
+                        document.getElementById('forecastContent').innerHTML = data.forecast;
+                        document.getElementById('forecastSection').style.display = 'block';
+                    } else {
+                        document.getElementById('forecastSection').style.display = 'none';
+                    }
+                    
+                    results.style.display = 'block';
+                    
+                    // Smooth scroll to results
+                    results.scrollIntoView({ behavior: 'smooth' });
+                    
+                } else {
+                    // Show error
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error';
+                    errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${data.error}`;
+                    document.querySelector('.input-section').appendChild(errorDiv);
+                }
+                
+            } catch (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Network error: ${error.message}`;
+                document.querySelector('.input-section').appendChild(errorDiv);
+            }
+            
+            // Hide loading state
+            loading.style.display = 'none';
+            submitBtn.disabled = false;
+        });
+    </script>
+</body>
+</html>

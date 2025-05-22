@@ -1,0 +1,8 @@
+flask==2.3.3
+python-dotenv==1.0.0
+requests==2.31.0
+colorama==0.4.6
+geopy==2.4.0
+groq==0.4.1
+pytz==2023.3.post1
+
