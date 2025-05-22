@@ -34,7 +34,7 @@ Obtain API Keys: Get keys from OpenWeatherMap and Groq Console.
 
 Configure .env: Create .env in the root with OPENWEATHER_API_KEY="your_key" and GROQ_API_KEY="your_key". (Add proxy settings if needed).
 
-🚀** Usage**
+🚀 **Usage**
 Run the app: python app_web.py
 
 Open in browser: Navigate to http://localhost:5000.
